@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+
+<!--定义处理cookie-->
+            function getCookie(name) {
+                var cookieValue = null;
+                if (document.cookie && document.cookie !== ''){     			// 如果cookie存在且不为空
+                    var cookies = document.cookie.split(';');
+                    for (var i = 0; i < cookies.length; i++) {
+                        var cookie = jQuery.trim(cookies[i]);       			// trim() 移除str两侧空白
+                        // Does this cookie string begin with the name we want?
+                        if (cookie.substring(0,name.length + 1) === (name + '=')){ 	// substring(start,stop) 从头截取str
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;							// 返回想要的cookie值
+            }
+
+<!--获取csrftoken-->
+            var csrftoken = getCookie('csrftoken');					// 获取csrftoken的值
+
+<!--判断是否需要防御csrf-->
+            function csrfSafeMethod(method) {				// these HTTP methods do not require CSRF protection
+                return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));	// /str/.test(str) 检测一个字符串是否匹配某个模式,返回True|False
+            }
+
+<!--每次ajax的POST请求时，请求头添加"X-CSRFToken",对应值就是上面获取的csrftoken值-->
+            $.ajaxSetup({
+                crossDomain: false, 					// 拒绝跨域,obviates need for sameOrigin test
+                beforeSend: function (xhr, settings) {			// 发送请求前触发,(xhr, settings)为固定参数
+                    if (!csrfSafeMethod(settings.type)){
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            });
+        })
+</script>
+{#<script>#}
+{#    $('.todolist_get').on("click", function () {#}
+{#        $.ajax({#}
+{#            type: "GET",#}
+{#            url: "{% url 'get_todo' %}",#}
+{#            dataType: 'json',#}
+{#            // 接收的格式是json#}
+{#            success: function (data) {#}
+{#                $('ul').empty();                // 清空#}
+{#                json_str = JSON.stringify(data);   // 把返回的object字符串化#}
+{#                json_data = JSON.parse(json_str);  // 解析,字符串又变回object#}
+{#                for (var i in data) {#}
+{#                    item = data[i];#}
+{#                    $('ul').append("<li>" + item.content + " " + item.set_time + "</li>");#}
+{#                }#}
+{#            }#}
+{#        })#}
+{#    });#}
+
+{##}
+{#    $("#todolist_submit").on("click", function () {#}
+{#        $.ajax({#}
+{#            url: "{% url 'submit_todo' %}",#}
+{#            type: "POST",#}
+{#            data: $("#todolist_form").serialize(),#}
+{#            method: "POST",#}
+{#            dataType: "text",#}
+{#            success: function (data, statusText, xmlHttpRequest) {#}
+{#                alert(data);#}
+{#            }#}
+{#        })#}
+{#    })#}
+{#</script>#}
+</head>
+<body>
+"2018-09-20 06:57:10"
+	{{ now }}
+    <p></p>
+{% load since_now %}
+    {{ "2018-09-20 17:13:10"|since_now1:'%Y-%m-%d %H:%M:%S'}}
+    <p></p>
+
+
+<h1>请写下要做的事情:</h1>
+<p></p>
+<form id="todolist_form" action="{% url 'submit_todo' %}" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+</form>
+<button id="todolist_submit" type="submit">提交</button>
+<p></p>
+<div id="todolist_show">
+    <h2>未做事情如下:</h2>
+    {% for task in task_list %}
+    <ul>{{ task.content }}   {{ task.set_time|since_now2 }}</ul>
+    {% endfor %}
+    <ul></ul>
+    <button class="todolist_get">获取</button>
+
+    <script>
+    $("#todolist_submit").on("click", function () {
+        $.ajax({
+            url: "{% url 'submit_todo' %}",
+            type: "POST",
+            data: $("#todolist_form").serialize(),
+            method: "POST",
+            dataType: "text",
+            success: function (data, statusText, xmlHttpRequest) {
+                alert(data);
+            }
+        })
+    })
+    </script>
+
+    <script>
+        $('.todolist_get').on("click", function () {
+            $.ajax({
+                type: "GET",
+                url: "{% url 'get_todo' %}",
+                dataType: 'json',
+            // 接收的格式是json
+                success: function (data) {
+                    $('ul').empty();                // 清空
+                    json_str = JSON.stringify(data);   // 把返回的object字符串化
+                    json_data = JSON.parse(json_str);  // 解析,字符串又变回object
+                    for (var i in data) {
+                        item = data[i];
+                        $('ul').append("<li>" + "{{ now }}"+ item.content + " " + item.set_time + "</li>");
+                }
+            }
+        })
+    });
+    </script>
+</div>
+</body>
+</html>
